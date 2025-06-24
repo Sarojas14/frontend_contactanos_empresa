@@ -11,6 +11,9 @@ const Contactanos = () => {
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [showModal, setShowModal] = useState(false); 
+  const [numberError, setNumberError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     contactsService.getAll().then(initialContacts => {
@@ -18,16 +21,39 @@ const Contactanos = () => {
     });
   }, []);
 
+  const validate = () => {
+    let valid = true;
+    setNumberError('');
+    setEmailError('');
+
+    if (number.length < 10) {
+      setNumberError('El número debe tener al menos 10 caracteres.');
+      valid = false;
+    }
+    if (!email.includes('@') || !email.endsWith('.com')) {
+      setEmailError('El correo debe contener "@" y terminar en ".com".');
+      valid = false;
+    }
+    return valid;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     const newContact = { name, number, email, subject };
-    const created = await contactsService.create(newContact);
-    setContacts(contacts.concat(created));
-    setName('');
-    setNumber('');
-    setEmail('');
-    setSubject('');
-    setShowModal(true); 
+    try {
+      await contactsService.create(newContact);
+      setContacts(contacts.concat(newContact));
+      setName('');
+      setNumber('');
+      setEmail('');
+      setSubject('');
+      setSuccessMessage('¡Formulario enviado correctamente! Nos comunicaremos contigo pronto.');
+      setShowModal(true);
+    } catch (error) {
+      setSuccessMessage('Ocurrió un error al enviar el formulario. Intenta de nuevo.');
+      setShowModal(true);
+    }
   };
 
   return (
@@ -102,6 +128,11 @@ const Contactanos = () => {
                 background: '#f8fafd'
               }}
             />
+            {numberError && (
+              <span style={{ color: 'red', fontSize: '1rem', marginTop: '-18px', marginBottom: '-10px' }}>
+                {numberError}
+              </span>
+            )}
             <input
               type="email"
               placeholder="Correo electrónico"
@@ -117,6 +148,11 @@ const Contactanos = () => {
                 background: '#f8fafd'
               }}
             />
+            {emailError && (
+              <span style={{ color: 'red', fontSize: '1rem', marginTop: '-18px', marginBottom: '-10px' }}>
+                {emailError}
+              </span>
+            )}
             <textarea
               placeholder="Asunto"
               value={subject}
@@ -177,8 +213,10 @@ const Contactanos = () => {
             width: '90%',
             maxWidth: 400
           }}>
-            <h2 style={{ marginBottom: 16 }}> Enviado correctamente</h2>
-            <p>Tu formulario ha sido enviado. Te contactaremos pronto.</p>
+            <h2 style={{ marginBottom: 16 }}>
+              {successMessage.includes('correctamente') ? 'Enviado correctamente' : 'Error'}
+            </h2>
+            <p>{successMessage}</p>
             <button onClick={() => setShowModal(false)} style={{
               marginTop: 20,
               padding: '10px 20px',
